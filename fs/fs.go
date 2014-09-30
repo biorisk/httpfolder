@@ -34,35 +34,34 @@ const (
 	StatusNotModified = 304
 	StatusMovedPermanently  = 301
 )
-var fullPath string
 
 // func main() {
 // 	http.Handle("/", http.StripPrefix("/", http.FileServer(http.Dir("."))))
 // 	http.ListenAndServe(":8181", nil)
 // }
 
-func (d Dir) Open(name string) (File, error) {
+func (d Dir) Open(name string) (File, string, error) {
 	if filepath.Separator != '/' && strings.IndexRune(name, filepath.Separator) >= 0 ||
 		strings.Contains(name, "\x00") {
-		return nil, errors.New("http: invalid character in file path")
+		return nil, "", errors.New("http: invalid character in file path")
 	}
 	dir := string(d)
 	if dir == "" {
 		dir = "."
 	}
-	fullPath = filepath.Join(dir, filepath.FromSlash(path.Clean("/"+name)))
-	f, err := os.Open(filepath.Join(dir, filepath.FromSlash(path.Clean("/"+name))))
+	fullPath := filepath.Join(dir, filepath.FromSlash(path.Clean("/"+name)))
+	f, err := os.Open(fullPath)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	return f, nil
+	return f, fullPath, nil
 }
 
 // A FileSystem implements access to a collection of named files.
 // The elements in a file path are separated by slash ('/', U+002F)
 // characters, regardless of host operating system convention.
 type FileSystem interface {
-	Open(name string) (File, error)
+	Open(name string) (File, string, error)
 }
 
 // A File is returned by a FileSystem's Open method and can be
@@ -75,7 +74,7 @@ type File interface {
 	Seek(offset int64, whence int) (int64, error)
 }
 
-func dirList(w http.ResponseWriter, f File, atRoot bool) {
+func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, "<b>%s</b>\n", fullPath)
 	fmt.Fprintf(w, "<pre>\n")
@@ -357,7 +356,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
 // 		return
 // 	}
 
-	f, err := fs.Open(name)
+	f, fullPath, err := fs.Open(name)
 	if err != nil {
 		// TODO expose actual error?
 		http.NotFound(w, r)
@@ -403,7 +402,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
 // 			}
 // 		}
 // 	}
-	
+
 	// Still a directory? (we didn't find an index.html file)
 	if d.IsDir() {
 		atRoot := false
@@ -413,7 +412,7 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
  		if name=="/" {
  			atRoot = true
  		}
-		dirList(w, f, atRoot)
+		dirList(w, f, fullPath, atRoot)
 		return
 	}
 
@@ -454,10 +453,17 @@ func FileServer(root FileSystem) http.Handler {
 }
 
 func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	for key, value := range r.URL.Query() {
+		fmt.Println("Key:", key, "Value:", value)
+	}
+	fmt.Printf("got: %s\n", r.URL.Path)
 	upath := r.URL.Path
 	if !strings.HasPrefix(upath, "/") {
 		upath = "/" + upath
 		r.URL.Path = upath
+	}
+	if _, ok := r.URL.Query()["upload"]; ok {
+		fmt.Println("upload")
 	}
 	serveFile(w, r, f.root, path.Clean(upath), true)
 }
@@ -564,3 +570,46 @@ func sumRangesSize(ranges []httpRange) (size int64) {
 	}
 	return
 }
+
+// code to receive posted forms with large file uploads by streaming to disk then parsing.
+// func receiveUpload(w http.ResponseWriter, req *http.Request) { //need to add current directory here
+// 	reader, err := req.MultipartReader()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		http.Error(w, "not a form", http.StatusBadRequest)
+// 	}
+// 	form, err := reader.ReadForm(100000)
+// 	defer form.RemoveAll()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
+// 
+// 	fmt.Println("incoming form")
+// //change this line to dump uploaded files in current directory
+// 	if len(form.File) > 0 { //check to make sure form has attached files before creating directory
+// 		fmt.Printf("uploading file to directory: %s\n", dir)
+// 	}
+// 	fmt.Fprint(w, "<html><body><h2>Uploaded</h2>\n")
+// 	for k, files := range form.File { //loop through each file selector in submitted form
+// 		for i := range files { //loop through each file from current file selector
+// 			fmt.Printf("key: %s  value: %s\n", k, files[i].Filename)
+// 			srcfile, err := files[i].Open()
+// 			if err != nil {
+// 				fmt.Println(err)
+// 			}
+// 			dstfile, err := os.Create(fmt.Sprintf("%s/%s", dir, files[i].Filename))
+// 			if err != nil {
+// 				fmt.Println(err)
+// 			}
+// 			sizecopied, err := io.Copy(dstfile, srcfile)
+// 			if err != nil {
+// 				fmt.Println(err)
+// 			}
+// 			fmt.Printf("file size: %d\n", sizecopied)
+// 			fmt.Fprintf(w, "<b>%s</b>: %d bytes<br>\n", files[i].Filename, sizecopied)
+// 			srcfile.Close()
+// 			dstfile.Close()
+// 		}
+// 	}
+// 	fmt.Fprint(w, "<p><h2>Done uploading files.</h2></body></html>")
+// }
