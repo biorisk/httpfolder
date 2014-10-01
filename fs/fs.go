@@ -631,6 +631,11 @@ func sendForm(w http.ResponseWriter, dir string, form string) {
 	data, err := Asset("html/" + form)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
-	fmt.Fprint(w, string(data))
+	out := string(data)
+	if form=="form.html" {
+		out = strings.Replace(out,"<!--current_directory-->","to " + dir,1)
+	}
+	fmt.Fprint(w, out)
 }
