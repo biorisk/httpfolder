@@ -3,6 +3,9 @@ httpfolder
 
 A quick and easy password protected web server for your files. httpfolder makes downloading/uploading files from your current working directory easy, even for fairly large files.
 
+Download precompiled binary here for linux/amd64:
+https://github.com/biorisk/httpfolder/raw/master/httpfolder
+
 Usage:
 httpfolder username password
 
