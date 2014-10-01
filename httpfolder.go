@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-// 	"projects/httpfolder/fs"
 )
 
 var port string
