@@ -77,7 +77,7 @@ type File interface {
 func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, "<b>%s/</b> ", fullPath)
-	fmt.Fprintf(w, "<a href=\"?form=1\">upload here</a><br>\n")
+	fmt.Fprintf(w, "<a href=\"?form=form.html\">upload here</a><br>\n")
 	fmt.Fprintf(w, "<pre>\n")
 	if !atRoot {
 		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", "..", "..") //go up one directory, will not go past base directory
@@ -418,9 +418,9 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
 			receiveUpload(w, r, fullPath)
 			return
 		}
-		if _, ok := r.URL.Query()["form"]; ok {
+		if form, ok := r.URL.Query()["form"]; ok {
 			fmt.Println("form")
-			sendForm(w, r, fullPath)
+			sendForm(w, fullPath, form[0])
 			return
 		}
 		dirList(w, f, fullPath, atRoot)
@@ -627,90 +627,10 @@ func receiveUpload(w http.ResponseWriter, req *http.Request, dir string) { //nee
 }
 
 
-func sendForm(w http.ResponseWriter, req *http.Request, dir string) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprint(w, `
-<html>
-<head>
-<style>
-h1, h2
-{
-	font-size: 1.5em;
-	font-weight: normal;
-}
-h1 { margin-bottom: 0px;}
-h2 { margin-top: 50px; }
-body { padding: 0 30px; font-family: 'Lucida Grande', 'Lucida Sans', arial, sans-serif; }
-form {
-	width:90%;
-	max-width:800px;
-}
-pre { background: #eee; padding: 10px; border-radius: 5px; overflow: auto }
-.progress { position:relative; width:400px; border: 1px solid #ddd; padding: 1px; border-radius: 3px; }
-.bar { background-color: #B4F5B4; width:0%; height:20px; border-radius: 3px; }
-.percent { position:absolute; display:inline-block; top:3px; left:48%; }
-</style>
-</head>
-<body>
-	<form action="?upload" method="post" enctype="multipart/form-data">
-		<fieldset>
-			<legend>File Upload</legend>`)
-fmt.Fprintf(w, "to %s <a href=\".\">return</a><br><br>\n", dir)
-fmt.Fprint(w, `<div>
-				<input type="file" id="fileselect" name="fileselect[]" multiple="multiple" />
-			</div>
-			<br>
-			<div id="submitbutton">
-				<button type="submit"><b>Upload Files</b></button>
-			</div>
-		</fieldset>
-	</form>
-
-	<div class="progress" id="progressbar" style="visibility:hidden;">
-		<div class="bar"></div >
-		<div class="percent">0%</div >
-	</div>
-
-	<div id="status"></div>`,
-
-
-// 	<script src="./jquery.js"></script>
-// 	<script src="./jquery.form.js"></script>
-	`<script>
-		(function() {
-			"use strict";
-
-			var bar = $('.bar');
-			var percent = $('.percent');
-			var status = $('#status');
-			var bardiv = $('#progressbar');
-
-			$('form').ajaxForm({
-				beforeSend: function() {
-					bardiv.css("visibility", "visible");
-					status.empty();
-					var percentVal = '0%';
-					bar.width(percentVal);
-					percent.html(percentVal);
-				},
-				uploadProgress: function(event, position, total, percentComplete) {
-					var percentVal = percentComplete + '%';
-					bardiv.css("visibility", "visible");
-					bar.width(percentVal);
-					percent.html(percentVal);
-				},
-				success: function(data, statusText, xhr) {
-					var percentVal = '100%';
-					bar.width(percentVal);
-					percent.html(percentVal);
-					status.html(xhr.responseText);
-				},
-				error: function(xhr, statusText, err) {
-					status.html(err || statusText);
-				}
-			});
-		})();
-	</script>
-</body>
-</html>` )
+func sendForm(w http.ResponseWriter, dir string, form string) {
+	data, err := Asset("html/" + form)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Fprint(w, string(data))
 }
