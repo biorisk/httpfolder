@@ -1,0 +1,85 @@
+<html>
+<head>
+<style>
+h1, h2
+{
+	font-size: 1.5em;
+	font-weight: normal;
+}
+h1 { margin-bottom: 0px;}
+h2 { margin-top: 50px; }
+body { padding: 0 30px; font-family: 'Lucida Grande', 'Lucida Sans', arial, sans-serif; }
+form {
+	width:90%;
+	max-width:800px;
+}
+pre { background: #eee; padding: 10px; border-radius: 5px; overflow: auto }
+.progress { position:relative; width:400px; border: 1px solid #ddd; padding: 1px; border-radius: 3px; }
+.bar { background-color: #B4F5B4; width:0%; height:20px; border-radius: 3px; }
+.percent { position:absolute; display:inline-block; top:3px; left:48%; }
+</style>
+</head>
+<body>
+	<form action="?upload" method="post" enctype="multipart/form-data">
+		<fieldset>
+			<legend>File Upload <!--current_directory--></legend>
+			<br>
+			<div>
+				<input type="file" id="fileselect" name="fileselect[]" multiple="multiple" />
+			</div>
+			<br>
+			<div id="submitbutton">
+				<button type="submit"><b>Upload Files</b></button>
+			</div>
+			<br>
+			<a href=".">return to directory</a>
+		</fieldset>
+	</form>
+
+	<div class="progress" id="progressbar" style="visibility:hidden;">
+		<div class="bar"></div >
+		<div class="percent">0%</div >
+	</div>
+
+	<div id="status"></div>
+
+
+ 	<script src="./?form=jquery.js"></script>
+ 	<script src="./?form=jquery.form.js"></script>
+	<script>
+		(function() {
+			"use strict";
+
+			var bar = $('.bar');
+			var percent = $('.percent');
+			var status = $('#status');
+			var bardiv = $('#progressbar');
+
+			$('form').ajaxForm({
+				beforeSend: function() {
+					bardiv.css("visibility", "visible");
+					status.empty();
+					var percentVal = '0%';
+					bar.width(percentVal);
+					percent.html(percentVal);
+				},
+				uploadProgress: function(event, position, total, percentComplete) {
+					var percentVal = percentComplete + '%';
+					bardiv.css("visibility", "visible");
+					bar.width(percentVal);
+					percent.html(percentVal);
+				},
+				success: function(data, statusText, xhr) {
+					var percentVal = '100%';
+					bar.width(percentVal);
+					percent.html(percentVal);
+					status.html(xhr.responseText);
+				},
+				error: function(xhr, statusText, err) {
+					status.html(err || statusText);
+				}
+			});
+		})();
+	</script>
+</body>
+</html>

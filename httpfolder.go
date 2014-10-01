@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"projects/httpfolder/fs"
+// 	"projects/httpfolder/fs"
 )
 
 var port string
@@ -28,7 +28,7 @@ func main() {
 	authenticator := auth.NewBasicAuthenticator("Please login.", Secret)
 	http.HandleFunc("/",
 		authenticator.Wrap(func(res http.ResponseWriter, req *auth.AuthenticatedRequest) {
-			httpfolder.FileServer(httpfolder.Dir(cwd)).ServeHTTP(res, &req.Request)
+			FileServer(Dir(cwd)).ServeHTTP(res, &req.Request)
 		}))
 	
 	http.ListenAndServe((":"+port), nil)
