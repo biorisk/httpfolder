@@ -623,7 +623,7 @@ func receiveUpload(w http.ResponseWriter, req *http.Request, dir string) { //nee
 			dstfile.Close()
 		}
 	}
-	fmt.Fprint(w, "<p><h2>Done uploading files.</h2></body></html>")
+	fmt.Fprint(w, "<p><h2>Done uploading files.</h2><a href=\".\">return to folder</a></body></html>")
 }
 
 
@@ -655,7 +655,7 @@ pre { background: #eee; padding: 10px; border-radius: 5px; overflow: auto }
 	<form action="?upload" method="post" enctype="multipart/form-data">
 		<fieldset>
 			<legend>File Upload</legend>`)
-fmt.Fprintf(w, "to %s<br><br>\n", dir)
+fmt.Fprintf(w, "to %s <a href=\".\">return</a><br><br>\n", dir)
 fmt.Fprint(w, `<div>
 				<input type="file" id="fileselect" name="fileselect[]" multiple="multiple" />
 			</div>
