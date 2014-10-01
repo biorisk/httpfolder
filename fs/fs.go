@@ -76,7 +76,8 @@ type File interface {
 
 func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	fmt.Fprintf(w, "<b>%s</b>\n", fullPath)
+	fmt.Fprintf(w, "<b>%s/</b> ", fullPath)
+	fmt.Fprintf(w, "<a href=\"?form=1\">upload here</a><br>\n")
 	fmt.Fprintf(w, "<pre>\n")
 	if !atRoot {
 		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", "..", "..") //go up one directory, will not go past base directory
@@ -412,6 +413,16 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
  		if name=="/" {
  			atRoot = true
  		}
+		if _, ok := r.URL.Query()["upload"]; ok {
+			fmt.Println("upload")
+			receiveUpload(w, r, fullPath)
+			return
+		}
+		if _, ok := r.URL.Query()["form"]; ok {
+			fmt.Println("form")
+			sendForm(w, r, fullPath)
+			return
+		}
 		dirList(w, f, fullPath, atRoot)
 		return
 	}
@@ -462,9 +473,10 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		upath = "/" + upath
 		r.URL.Path = upath
 	}
-	if _, ok := r.URL.Query()["upload"]; ok {
-		fmt.Println("upload")
-	}
+// 	if _, ok := r.URL.Query()["upload"]; ok {
+// 		fmt.Println("upload")
+// 		receiveUpload(w, r, f.root, path.Clean(upath))
+// 	}
 	serveFile(w, r, f.root, path.Clean(upath), true)
 }
 
@@ -572,44 +584,133 @@ func sumRangesSize(ranges []httpRange) (size int64) {
 }
 
 // code to receive posted forms with large file uploads by streaming to disk then parsing.
-// func receiveUpload(w http.ResponseWriter, req *http.Request) { //need to add current directory here
-// 	reader, err := req.MultipartReader()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		http.Error(w, "not a form", http.StatusBadRequest)
-// 	}
-// 	form, err := reader.ReadForm(100000)
-// 	defer form.RemoveAll()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-// 
-// 	fmt.Println("incoming form")
-// //change this line to dump uploaded files in current directory
-// 	if len(form.File) > 0 { //check to make sure form has attached files before creating directory
-// 		fmt.Printf("uploading file to directory: %s\n", dir)
-// 	}
-// 	fmt.Fprint(w, "<html><body><h2>Uploaded</h2>\n")
-// 	for k, files := range form.File { //loop through each file selector in submitted form
-// 		for i := range files { //loop through each file from current file selector
-// 			fmt.Printf("key: %s  value: %s\n", k, files[i].Filename)
-// 			srcfile, err := files[i].Open()
-// 			if err != nil {
-// 				fmt.Println(err)
-// 			}
-// 			dstfile, err := os.Create(fmt.Sprintf("%s/%s", dir, files[i].Filename))
-// 			if err != nil {
-// 				fmt.Println(err)
-// 			}
-// 			sizecopied, err := io.Copy(dstfile, srcfile)
-// 			if err != nil {
-// 				fmt.Println(err)
-// 			}
-// 			fmt.Printf("file size: %d\n", sizecopied)
-// 			fmt.Fprintf(w, "<b>%s</b>: %d bytes<br>\n", files[i].Filename, sizecopied)
-// 			srcfile.Close()
-// 			dstfile.Close()
-// 		}
-// 	}
-// 	fmt.Fprint(w, "<p><h2>Done uploading files.</h2></body></html>")
-// }
+func receiveUpload(w http.ResponseWriter, req *http.Request, dir string) { //need to add current directory here
+	reader, err := req.MultipartReader()
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "not a form", http.StatusBadRequest)
+	}
+	form, err := reader.ReadForm(100000)
+	defer form.RemoveAll()
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println("incoming form")
+//change this line to dump uploaded files in current directory
+	if len(form.File) > 0 { //check to make sure form has attached files before creating directory
+		fmt.Printf("uploading file to directory: %s\n", dir)
+	}
+	fmt.Fprint(w, "<html><body><h2>Uploaded</h2>\n")
+	for k, files := range form.File { //loop through each file selector in submitted form
+		for i := range files { //loop through each file from current file selector
+			fmt.Printf("key: %s  value: %s\n", k, files[i].Filename)
+			srcfile, err := files[i].Open()
+			if err != nil {
+				fmt.Println(err)
+			}
+			dstfile, err := os.Create(fmt.Sprintf("%s/%s", dir, files[i].Filename))
+			if err != nil {
+				fmt.Println(err)
+			}
+			sizecopied, err := io.Copy(dstfile, srcfile)
+			if err != nil {
+				fmt.Println(err)
+			}
+			fmt.Printf("file size: %d\n", sizecopied)
+			fmt.Fprintf(w, "<b>%s</b>: %d bytes<br>\n", files[i].Filename, sizecopied)
+			srcfile.Close()
+			dstfile.Close()
+		}
+	}
+	fmt.Fprint(w, "<p><h2>Done uploading files.</h2></body></html>")
+}
+
+
+func sendForm(w http.ResponseWriter, req *http.Request, dir string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprint(w, `
+<html>
+<head>
+<style>
+h1, h2
+{
+	font-size: 1.5em;
+	font-weight: normal;
+}
+h1 { margin-bottom: 0px;}
+h2 { margin-top: 50px; }
+body { padding: 0 30px; font-family: 'Lucida Grande', 'Lucida Sans', arial, sans-serif; }
+form {
+	width:90%;
+	max-width:800px;
+}
+pre { background: #eee; padding: 10px; border-radius: 5px; overflow: auto }
+.progress { position:relative; width:400px; border: 1px solid #ddd; padding: 1px; border-radius: 3px; }
+.bar { background-color: #B4F5B4; width:0%; height:20px; border-radius: 3px; }
+.percent { position:absolute; display:inline-block; top:3px; left:48%; }
+</style>
+</head>
+<body>
+	<form action="?upload" method="post" enctype="multipart/form-data">
+		<fieldset>
+			<legend>File Upload</legend>`)
+fmt.Fprintf(w, "to %s<br><br>\n", dir)
+fmt.Fprint(w, `<div>
+				<input type="file" id="fileselect" name="fileselect[]" multiple="multiple" />
+			</div>
+			<br>
+			<div id="submitbutton">
+				<button type="submit"><b>Upload Files</b></button>
+			</div>
+		</fieldset>
+	</form>
+
+	<div class="progress" id="progressbar" style="visibility:hidden;">
+		<div class="bar"></div >
+		<div class="percent">0%</div >
+	</div>
+
+	<div id="status"></div>`,
+
+
+// 	<script src="./jquery.js"></script>
+// 	<script src="./jquery.form.js"></script>
+	`<script>
+		(function() {
+			"use strict";
+
+			var bar = $('.bar');
+			var percent = $('.percent');
+			var status = $('#status');
+			var bardiv = $('#progressbar');
+
+			$('form').ajaxForm({
+				beforeSend: function() {
+					bardiv.css("visibility", "visible");
+					status.empty();
+					var percentVal = '0%';
+					bar.width(percentVal);
+					percent.html(percentVal);
+				},
+				uploadProgress: function(event, position, total, percentComplete) {
+					var percentVal = percentComplete + '%';
+					bardiv.css("visibility", "visible");
+					bar.width(percentVal);
+					percent.html(percentVal);
+				},
+				success: function(data, statusText, xhr) {
+					var percentVal = '100%';
+					bar.width(percentVal);
+					percent.html(percentVal);
+					status.html(xhr.responseText);
+				},
+				error: function(xhr, statusText, err) {
+					status.html(err || statusText);
+				}
+			});
+		})();
+	</script>
+</body>
+</html>` )
+}
