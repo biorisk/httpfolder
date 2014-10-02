@@ -1,11 +1,13 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/abbot/go-http-auth"
 	"log"
 	"net/http"
+	"net"
 	"os"
 )
 
@@ -19,7 +21,8 @@ func main() {
 	usr = flag.Arg(0)
 	passwd = flag.Arg(1)
 	cwd, err := os.Getwd()
-	fmt.Printf("Serving: %s on port %s\n", cwd, port)
+	ip, err := localIP();
+	fmt.Printf("Serving: %s at http://%s:%s\n", cwd, ip, port)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,3 +43,28 @@ func Secret(user, realm string) string {
 	}
 	return mymd5
 }
+
+func localIP() (net.IP, error) { 
+	tt, err := net.Interfaces() 
+	if err != nil { 
+			return nil, err 
+	} 
+	for _, t := range tt { 
+			aa, err := t.Addrs() 
+			if err != nil { 
+					return nil, err 
+			} 
+			for _, a := range aa { 
+					ipnet, ok := a.(*net.IPNet) 
+					if !ok { 
+							continue 
+					} 
+					v4 := ipnet.IP.To4() 
+					if v4 == nil || v4[0] == 127 { // loopback address 
+							continue 
+					} 
+					return v4, nil 
+			} 
+	}
+	return nil, errors.New("cannot find local IP address") 
+} 
