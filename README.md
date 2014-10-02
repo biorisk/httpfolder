@@ -18,4 +18,6 @@ Check to make sure httpfolder is running by typing localhost:8080 (or the port y
 
 Currently, only supports serving the current working directory. Will allow you to traverse directories below
 
-Based on the FileServer in the standard golang http library. 
+Based on the FileServer in the standard golang http library.
+
+If you wish to change the html upload form, you will need <a href="https://github.com/jteeuwen/go-bindata">go-bindata</a> installed.
