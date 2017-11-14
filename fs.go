@@ -77,7 +77,7 @@ type File interface {
 func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, "<b>%s/</b> ", fullPath)
-	fmt.Fprintf(w, "<a href=\"?form=form.html\">upload here</a><br>\n")
+	fmt.Fprintf(w, "<a href=\"?form=form.html\">upload here</a> <a href=\"?images=1\">view images</a><br>\n")
 	fmt.Fprintf(w, "<pre>\n")
 	if !atRoot {
 		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", "..", "..") //go up one directory, will not go past base directory
@@ -97,6 +97,36 @@ func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 		}
 	}
 	fmt.Fprintf(w, "</pre>\n")
+}
+
+func dirListImages(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
+       validImg := map[string]bool{ ".jpg": true, ".png": true}
+       w.Header().Set("Content-Type", "text/html; charset=utf-8")
+       fmt.Fprintf(w, "<b>%s/</b> ", fullPath)
+       fmt.Fprintf(w, "<a href=\"?form=form.html\">upload here</a> <a href=\".\">hide images</a><br>\n")
+       fmt.Fprintf(w, "<pre>\n")
+       if !atRoot {
+               fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", "..", "..") //go up one directory, will not go past base directory
+       }
+       for {
+               dirs, err := f.Readdir(100)
+               if err != nil || len(dirs) == 0 {
+                       break
+               }
+               for _, d := range dirs {
+                       name := d.Name()
+                       if d.IsDir() {
+                               name += "/"
+                       }
+                       ext := strings.ToLower(name[len(name)-4:])
+                       // TODO htmlescape
+                       fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", name, name)
+                       if _, ok := validImg[ext]; ok {
+                               fmt.Fprintf(w, "<img src=\"./%s\">\n", name)
+                       }
+               }
+       }
+       fmt.Fprintf(w, "</pre>\n")
 }
 
 // ServeContent replies to the request using the content in the
@@ -423,6 +453,11 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
 			sendForm(w, fullPath, form[0])
 			return
 		}
+		if _, ok := r.URL.Query()["images"]; ok {
+                       dirListImages(w, f, fullPath, atRoot)
+                       return
+                }
+
 		dirList(w, f, fullPath, atRoot)
 		return
 	}
