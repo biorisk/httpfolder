@@ -27,12 +27,13 @@ import (
 //
 // An empty Dir is treated as ".".
 type Dir string
+
 const (
-	sniffLen = 512
+	sniffLen                           = 512
 	StatusRequestedRangeNotSatisfiable = 416
-	StatusPartialContent = 206
-	StatusNotModified = 304
-	StatusMovedPermanently  = 301
+	StatusPartialContent               = 206
+	StatusNotModified                  = 304
+	StatusMovedPermanently             = 301
 )
 
 // func main() {
@@ -100,33 +101,33 @@ func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 }
 
 func dirListImages(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
-       validImg := map[string]bool{ ".jpg": true, ".png": true}
-       w.Header().Set("Content-Type", "text/html; charset=utf-8")
-       fmt.Fprintf(w, "<b>%s/</b> ", fullPath)
-       fmt.Fprintf(w, "<a href=\"?form=form.html\">upload here</a> <a href=\".\">hide images</a><br>\n")
-       fmt.Fprintf(w, "<pre>\n")
-       if !atRoot {
-               fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", "..", "..") //go up one directory, will not go past base directory
-       }
-       for {
-               dirs, err := f.Readdir(100)
-               if err != nil || len(dirs) == 0 {
-                       break
-               }
-               for _, d := range dirs {
-                       name := d.Name()
-                       if d.IsDir() {
-                               name += "/"
-                       }
-                       ext := strings.ToLower(name[len(name)-4:])
-                       // TODO htmlescape
-                       fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", name, name)
-                       if _, ok := validImg[ext]; ok {
-                               fmt.Fprintf(w, "<img src=\"./%s\">\n", name)
-                       }
-               }
-       }
-       fmt.Fprintf(w, "</pre>\n")
+	validImg := map[string]bool{".jpg": true, ".png": true}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	fmt.Fprintf(w, "<b>%s/</b> ", fullPath)
+	fmt.Fprintf(w, "<a href=\"?form=form.html\">upload here</a> <a href=\".\">hide images</a><br>\n")
+	fmt.Fprintf(w, "<pre>\n")
+	if !atRoot {
+		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", "..", "..") //go up one directory, will not go past base directory
+	}
+	for {
+		dirs, err := f.Readdir(100)
+		if err != nil || len(dirs) == 0 {
+			break
+		}
+		for _, d := range dirs {
+			name := d.Name()
+			if d.IsDir() {
+				name += "/"
+			}
+			ext := strings.ToLower(name[len(name)-4:])
+			// TODO htmlescape
+			fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", name, name)
+			if _, ok := validImg[ext]; ok {
+				fmt.Fprintf(w, "<img src=\"./%s\">\n", name)
+			}
+		}
+	}
+	fmt.Fprintf(w, "</pre>\n")
 }
 
 // ServeContent replies to the request using the content in the
@@ -377,15 +378,15 @@ func checkETag(w http.ResponseWriter, r *http.Request) (rangeReq string, done bo
 
 // name is '/'-separated, not filepath.Separator.
 func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name string, redirect bool) {
-// 	const indexPage = "/index.html"
+	// 	const indexPage = "/index.html"
 
 	// redirect .../index.html to .../
 	// can't use Redirect() because that would make the path absolute,
 	// which would be a problem running under StripPrefix
-// 	if strings.HasSuffix(r.URL.Path, indexPage) {
-// 		localRedirect(w, r, "./")
-// 		return
-// 	}
+	// 	if strings.HasSuffix(r.URL.Path, indexPage) {
+	// 		localRedirect(w, r, "./")
+	// 		return
+	// 	}
 
 	f, fullPath, err := fs.Open(name)
 	if err != nil {
@@ -420,19 +421,19 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
 	}
 
 	// use contents of index.html for directory, if present
-// 	if d.IsDir() {
-// 		index := name + indexPage
-// 		ff, err := fs.Open(index)
-// 		if err == nil {
-// 			defer ff.Close()
-// 			dd, err := ff.Stat()
-// 			if err == nil {
-// 				name = index
-// 				d = dd
-// 				f = ff
-// 			}
-// 		}
-// 	}
+	// 	if d.IsDir() {
+	// 		index := name + indexPage
+	// 		ff, err := fs.Open(index)
+	// 		if err == nil {
+	// 			defer ff.Close()
+	// 			dd, err := ff.Stat()
+	// 			if err == nil {
+	// 				name = index
+	// 				d = dd
+	// 				f = ff
+	// 			}
+	// 		}
+	// 	}
 
 	// Still a directory? (we didn't find an index.html file)
 	if d.IsDir() {
@@ -440,9 +441,9 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
 		if checkLastModified(w, r, d.ModTime()) {
 			return
 		}
- 		if name=="/" {
- 			atRoot = true
- 		}
+		if name == "/" {
+			atRoot = true
+		}
 		if _, ok := r.URL.Query()["upload"]; ok {
 			fmt.Println("upload")
 			receiveUpload(w, r, fullPath)
@@ -454,9 +455,9 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
 			return
 		}
 		if _, ok := r.URL.Query()["images"]; ok {
-                       dirListImages(w, f, fullPath, atRoot)
-                       return
-                }
+			dirListImages(w, f, fullPath, atRoot)
+			return
+		}
 
 		dirList(w, f, fullPath, atRoot)
 		return
@@ -508,10 +509,10 @@ func (f *fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		upath = "/" + upath
 		r.URL.Path = upath
 	}
-// 	if _, ok := r.URL.Query()["upload"]; ok {
-// 		fmt.Println("upload")
-// 		receiveUpload(w, r, f.root, path.Clean(upath))
-// 	}
+	// 	if _, ok := r.URL.Query()["upload"]; ok {
+	// 		fmt.Println("upload")
+	// 		receiveUpload(w, r, f.root, path.Clean(upath))
+	// 	}
 	serveFile(w, r, f.root, path.Clean(upath), true)
 }
 
@@ -632,7 +633,7 @@ func receiveUpload(w http.ResponseWriter, req *http.Request, dir string) { //nee
 	}
 
 	fmt.Println("incoming form")
-//change this line to dump uploaded files in current directory
+	//change this line to dump uploaded files in current directory
 	if len(form.File) > 0 { //check to make sure form has attached files before creating directory
 		fmt.Printf("uploading file to directory: %s\n", dir)
 	}
@@ -661,7 +662,6 @@ func receiveUpload(w http.ResponseWriter, req *http.Request, dir string) { //nee
 	fmt.Fprint(w, "<p><h2>Done uploading files.</h2><a href=\".\">return to folder</a></body></html>")
 }
 
-
 func sendForm(w http.ResponseWriter, dir string, form string) {
 	data, err := Asset("html/" + form)
 	if err != nil {
@@ -669,8 +669,8 @@ func sendForm(w http.ResponseWriter, dir string, form string) {
 		return
 	}
 	out := string(data)
-	if form=="form.html" {
-		out = strings.Replace(out,"<!--current_directory-->","to " + dir,1)
+	if form == "form.html" {
+		out = strings.Replace(out, "<!--current_directory-->", "to "+dir, 1)
 	}
 	fmt.Fprint(w, out)
 }

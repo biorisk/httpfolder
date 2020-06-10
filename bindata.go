@@ -7790,10 +7790,11 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() ([]byte, error){
-	"html/form.html": html_form_html,
+	"html/form.html":      html_form_html,
 	"html/jquery.form.js": html_jquery_form_js,
-	"html/jquery.js": html_jquery_js,
+	"html/jquery.js":      html_jquery_js,
 }
+
 // AssetDir returns the file names below a certain
 // directory embedded in the file by go-bindata.
 // For example if you run go-bindata on data/... and data contains the
@@ -7830,16 +7831,14 @@ func AssetDir(name string) ([]string, error) {
 }
 
 type _bintree_t struct {
-	Func func() ([]byte, error)
+	Func     func() ([]byte, error)
 	Children map[string]*_bintree_t
 }
+
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
 	"html": &_bintree_t{nil, map[string]*_bintree_t{
-		"form.html": &_bintree_t{html_form_html, map[string]*_bintree_t{
-		}},
-		"jquery.form.js": &_bintree_t{html_jquery_form_js, map[string]*_bintree_t{
-		}},
-		"jquery.js": &_bintree_t{html_jquery_js, map[string]*_bintree_t{
-		}},
+		"form.html":      &_bintree_t{html_form_html, map[string]*_bintree_t{}},
+		"jquery.form.js": &_bintree_t{html_jquery_form_js, map[string]*_bintree_t{}},
+		"jquery.js":      &_bintree_t{html_jquery_js, map[string]*_bintree_t{}},
 	}},
 }}
