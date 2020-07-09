@@ -17,6 +17,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -80,9 +81,12 @@ func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 	fmt.Fprintf(w, "<b>%s/</b> ", fullPath)
 	fmt.Fprintf(w, "<a href=\"?form=form.html\">upload here</a> <a href=\"?images=1\">view images</a><br>\n")
 	fmt.Fprintf(w, "<pre>\n")
+	fmt.Fprintf(w, "<b>Directories</b>\n")
 	if !atRoot {
 		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", "..", "..") //go up one directory, will not go past base directory
 	}
+	files := []string{}
+	subDirs := []string{}
 	for {
 		dirs, err := f.Readdir(100)
 		if err != nil || len(dirs) == 0 {
@@ -92,10 +96,20 @@ func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 			name := d.Name()
 			if d.IsDir() {
 				name += "/"
+				subDirs = append(subDirs, name)
+			} else {
+				files = append(files, name)
 			}
-			// TODO htmlescape
-			fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", name, name)
 		}
+	}
+	sort.Strings(subDirs)
+	sort.Strings(files)
+	for _, name := range subDirs {
+		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", name, name)
+	}
+	fmt.Fprintln(w, "<br><b>Files</b>")
+	for _, name := range files {
+		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", name, name)
 	}
 	fmt.Fprintf(w, "</pre>\n")
 }
