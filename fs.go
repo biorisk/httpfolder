@@ -76,7 +76,8 @@ type File interface {
 	Seek(offset int64, whence int) (int64, error)
 }
 
-func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
+func dirList(w http.ResponseWriter, f File, fullPath string, atRoot, showImages bool) {
+	validImg := map[string]bool{".jpg": true, ".png": true}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, "<b>%s/</b> ", fullPath)
 	fmt.Fprintf(w, "<a href=\"?form=form.html\">upload here</a> <a href=\"?images=1\">view images</a><br>\n")
@@ -110,6 +111,12 @@ func dirList(w http.ResponseWriter, f File, fullPath string, atRoot bool) {
 	fmt.Fprintln(w, "<br><b>Files</b>")
 	for _, name := range files {
 		fmt.Fprintf(w, "<a href=\"%s\">%s</a>\n", name, name)
+		if showImages {
+			ext := strings.ToLower(name[len(name)-4:])
+			if _, ok := validImg[ext]; ok {
+				fmt.Fprintf(w, "<img src=\"./%s\">\n", name)
+			}
+		}
 	}
 	fmt.Fprintf(w, "</pre>\n")
 }
