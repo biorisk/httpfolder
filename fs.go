@@ -476,11 +476,11 @@ func serveFile(w http.ResponseWriter, r *http.Request, fs FileSystem, name strin
 			return
 		}
 		if _, ok := r.URL.Query()["images"]; ok {
-			dirListImages(w, f, fullPath, atRoot)
+			dirList(w, f, fullPath, atRoot, true)
 			return
 		}
 
-		dirList(w, f, fullPath, atRoot)
+		dirList(w, f, fullPath, atRoot, false)
 		return
 	}
 
